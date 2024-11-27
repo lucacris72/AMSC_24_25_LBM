@@ -6,7 +6,7 @@
 
 using namespace std;
 
-void init_equilibrium(vector<double> &f, vector<double> &r,
+void init_equilibrium(vector<double> &f0, vector<double> &f1, vector<double> &r,
                       vector<double> &u, vector<double> &v)
 {
     for (unsigned int y = 0; y < NY; ++y)
@@ -16,10 +16,11 @@ void init_equilibrium(vector<double> &f, vector<double> &r,
             double rho = r[scalar_index(x, y)];
             double ux = u[scalar_index(x, y)];
             double uy = v[scalar_index(x, y)];
+            f0[field0_index(x,y)] = w0*(1.0 - 1.5*(ux*ux+uy*uy));
             for (unsigned int i = 0; i < ndir; ++i)
             {
                 double cidotu = dirx[i] * ux + diry[i] * uy;
-                f[field_index(x, y, i)] =
+                f1[field_index(x, y, i)] =
                     wi[i] * rho * (1.0 + 3.0 * cidotu + 4.5 * cidotu * cidotu - 1.5 * (ux * ux + uy * uy));
             }
         }
