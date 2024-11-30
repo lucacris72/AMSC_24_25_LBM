@@ -70,7 +70,7 @@ void stream_collide_save(vector<double> &f0, vector<double> &f1, vector<double> 
             // 3 0 1
             // 7 4 8
             
-            double rho_in = f0[field0_index(x, y)];
+            double rho_in = f0[field0_index(x, y)]; // compute rho before straming step
             
             for (unsigned int i = 1; i < ndir; ++i)
             {
