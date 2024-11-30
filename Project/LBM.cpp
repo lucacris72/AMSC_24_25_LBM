@@ -20,14 +20,14 @@ void init_equilibrium(vector<double> &f0, vector<double> &f1, vector<double> &r,
             for (unsigned int i = 0; i < ndir; ++i)
             {
                 double cidotu = dirx[i] * ux + diry[i] * uy;
-                f1[field_index(x, y, i)] =
+                f1[fieldn_index(x, y, i)] =
                     wi[i] * rho * (1.0 + 3.0 * cidotu + 4.5 * cidotu * cidotu - 1.5 * (ux * ux + uy * uy));
             }
         }
     }
 }
 
-void stream(vector<double> &f_src, vector<double> &f_dst)
+/*void stream(vector<double> &f_src, vector<double> &f_dst)
 {
     for (unsigned int y = 0; y < NY; ++y)
     {
@@ -37,13 +37,26 @@ void stream(vector<double> &f_src, vector<double> &f_dst)
             {
                 // enforce periodicity
                 // add NX to ensure that value is positive
-                unsigned int xmd = (NX + x - dirx[i]) % NX;
-                unsigned int ymd = (NY + y - diry[i]) % NY;
+                unsigned int xmd = (x - dirx[i]);
+                unsigned int ymd = (y - diry[i]);
+
+                if (!(0 <= xmd < NX || 0 <= ymd < NY))
+                {
+                    corner (f_src, f_dst, xmd, ymd);
+                }
+
+                else if (!(0 <= xmd < NX && 0 <= ymd < NY))
+                {
+                    bounceback (f_src, f_dst, xmd, ymd);
+                }
+                else
+                {
                 f_dst[field_index(x, y, i)] = f_src[field_index(xmd, ymd, i)];
+                }            
             }
         }
     }
-}
+}*/
 
 void compute_rho_u(vector<double> &f, vector<double> &r,
                    vector<double> &u, vector<double> &v)
@@ -57,7 +70,7 @@ void compute_rho_u(vector<double> &f, vector<double> &r,
             double uy = 0.0;
             for (unsigned int i = 0; i < ndir; ++i)
             {
-                rho += f[field_index(x, y, i)];
+                rho += f[fieldn_index(x, y, i)];
                 ux += dirx[i] * f[field_index(x, y, i)];
                 uy += diry[i] * f[field_index(x, y, i)];
             }
@@ -88,7 +101,7 @@ void collide(vector<double> &f, vector<double> &r, vector<double> &u, vector<dou
                 // calculate equilibrium
                 double feq = wi[i] * rho * (1.0 + 3.0 * cidotu + 4.5 * cidotu * cidotu - 1.5 * (ux * ux + uy * uy));
                 // relax to equilibrium
-                f[field_index(x, y, i)] =
+                f[fieldn_index(x, y, i)] =
                     omtauinv * f[field_index(x, y, i)] + tauinv * feq;
             }
         }
@@ -108,29 +121,84 @@ void stream_collide_save(vector<double> &f0, vector<double> &f1, vector<double> 
     {
         for (unsigned int x = 0; x < NX; ++x)
         {
-            unsigned int xp1 = (x + 1) % NX;
-            unsigned int yp1 = (y + 1) % NY;
-            unsigned int xm1 = (NX + x - 1) % NX;
-            unsigned int ym1 = (NY + y - 1) % NY;
+            double ft[ndir];        
+                       
+            /*unsigned int xp1 = (x + 1);
+            unsigned int yp1 = (y + 1);
+            unsigned int xm1 = (x - 1);
+            unsigned int ym1 = (y - 1);*/
+
             // direction numbering scheme
             // 6 2 5
             // 3 0 1
             // 7 4 8
-            double ft0 = f0[field0_index(x, y)];
+
+            ft[0] = f0[field0_index(x, y)];
+
+            for (unsigned int i = 1; i < ndir; ++i)
+            {
+                unsigned int xmd = (x - dirx[i]) ;
+                unsigned int ymd = (y - diry[i]) ;
+
+                bool right = 0;
+                bool left = 0;
+                bool up = 0;
+                bool down = 0;
+
+                
+                if (xmd < 0)
+                {
+                    left = 1;
+                }
+
+                if (xmd == NX)
+                {
+                    right = 1;
+                }
+
+                if (ymd == -1)
+                {
+                    up = 1;
+                }
+
+                if (ymd == NY)
+                {
+                    down = 1;
+                }
+
+                
+                if (!(right||left||up||down))
+
+                {
+                    double coeff = 2.0 * wi[i] * (1.0/cs) * (1.0/cs) * r[scalar_index(x, y)];
+                    double tmpx = dirx[i] * (left * vl[0]  + right * vr[0] + up * vu[0] + down * vd[0]);
+                    double tmpy = diry[i] * (left * vl[1]  + right * vr[1] + up * vu[1] + down * vd[1]);
+
+                    ft[i] = f1[fieldn_index(x, y, index_opp[i])] + coeff * tmpx + coeff * tmpy;
+                }
+
+                else
+                {
+                    ft[i] = f1[fieldn_index(xmd, ymd, i)];
+                }            
+            }
+
             // load populations from adjacent nodes
-            double ft1 = f1[fieldn_index(xm1, y, 1)];
+            /*double ft1 = f1[fieldn_index(xm1, y, 1)];
             double ft2 = f1[fieldn_index(x, ym1, 2)];
             double ft3 = f1[fieldn_index(xp1, y, 3)];
             double ft4 = f1[fieldn_index(x, yp1, 4)];
             double ft5 = f1[fieldn_index(xm1, ym1, 5)];
             double ft6 = f1[fieldn_index(xp1, ym1, 6)];
             double ft7 = f1[fieldn_index(xp1, yp1, 7)];
-            double ft8 = f1[fieldn_index(xm1, yp1, 8)];
+            double ft8 = f1[fieldn_index(xm1, yp1, 8)];*/
+
+
             // compute moments
-            double rho = ft0 + ft1 + ft2 + ft3 + ft4 + ft5 + ft6 + ft7 + ft8;
+            double rho = ft[0] + ft[1] + ft[2] + ft[3] + ft[4] + ft[5] + ft[6] + ft[7] + ft[8];
             double rhoinv = 1.0 / rho;
-            double ux = rhoinv * (ft1 + ft5 + ft8 - (ft3 + ft6 + ft7));
-            double uy = rhoinv * (ft2 + ft5 + ft6 - (ft4 + ft7 + ft8));
+            double ux = rhoinv * (ft[1] + ft[5] + ft[8] - (ft[3] + ft[6] + ft[7]));
+            double uy = rhoinv * (ft[2] + ft[5] + ft[6] - (ft[4] + ft[7] + ft[8]));
             // only write to memory when needed
             if (save)
             {
@@ -148,17 +216,29 @@ void stream_collide_save(vector<double> &f0, vector<double> &f1, vector<double> 
             // +(ci . 3u)(1 + (1/2) (ci . 3u))]
             // temporary variables
             double tw0r = tauinv * w0 * rho;                // w[0]*rho/tau
-            double twsr = tauinv * ws * rho;                // w[1-4]*rho/tau
+            double twsr = tauinv * wst * rho;                // w[1-4]*rho/tau
             double twdr = tauinv * wd * rho;                // w[5-8]*rho/tau
             double omusq = 1.0 - 1.5 * (ux * ux + uy * uy); // 1-(3/2)u.u
             double tux = 3.0 * ux;
             double tuy = 3.0 * uy;
-            f0[field0_index(x, y)] = omtauinv * ft0 + tw0r * (omusq);
-            double cidot3u = tux;
-            f2[fieldn_index(x, y, 1)] = omtauinv * ft1 + twsr * (omusq + cidot3u * (1.0 + 0.5 * cidot3u));
+
+            for (unsigned int i = 1; i < ndir; ++i)
+            {
+                // calculate dot product
+                double cidotu = dirx[i] * ux + diry[i] * uy;
+                // calculate equilibrium
+                double feq = wi[i] * rho * (1.0 + 3.0 * cidotu + 4.5 * cidotu * cidotu - 1.5 * (ux * ux + uy * uy));
+                // relax to equilibrium
+                f2[fieldn_index(x, y, i)] =
+                    omtauinv * ft[i] + tauinv * feq;
+            }
+
+            f0[field0_index(x, y)] = omtauinv * ft[0] + tw0r * (omusq);
+            // double cidot3u = tux;
+            // f2[fieldn_index(x, y, 1)] = omtauinv * ft[1] + twsr * (omusq + cidot3u * (1.0 + 0.5 * cidot3u));
             // ... similar expressions for directions 2-4
-            cidot3u = tux + tuy;
-            f2[fieldn_index(x, y, 5)] = omtauinv * ft5 + twdr * (omusq + cidot3u * (1.0 + 0.5 * cidot3u));
+            //cidot3u = tux + tuy;
+            // f2[fieldn_index(x, y, 5)] = omtauinv * ft[5] + twdr * (omusq + cidot3u * (1.0 + 0.5 * cidot3u));
             // ... similar expressions for directions 6-8
         }
     }
@@ -222,3 +302,50 @@ void save_scalar(const char *name, vector<double> &scalar,
     // close file
     fclose(fout);
 }
+
+/*void streamBBM(vector<double> &f_src, vector<double> &f_dst, vector<double> &r)    // stream with Bouncing Back Method BC
+{
+    for (unsigned int y = 0; y < NY; ++y)
+    {
+        for (unsigned int x = 0; x < NX; ++x)
+        {
+            for (unsigned int i = 0; i < ndir; ++i)
+            {
+                unsigned int xmd = (x - dirx[i]) ;
+                unsigned int ymd = (y - diry[i]) ;
+                
+                if (!(0 <= xmd < NX && 0 <= ymd < NY))
+                {
+                    bounceback (f_src, f_dst, xmd, ymd, i, r);
+                }
+
+                else
+                {
+                    f_dst[field_index(x, y, i)] = f_src[field_index(xmd, ymd, i)];
+                }            
+            }
+        }
+    }
+}
+
+void bounceback (vector<double> &f_src, vector<double> &f_dst, unsigned int xmd, unsigned int ymd, unsigned int i, vector<double> &r)
+{
+    unsigned int x = xmd + dirx[i];
+    unsigned int y = ymd + diry[i];
+
+    unsigned int i_opp = index_opp[i]
+
+    if (ymd != -1)
+    {   
+    f_dst[field_index(x, y, i)] = f_src[field_index(x, y, i_opp[i])];
+    }
+
+    else 
+    {
+    
+           f_dst[field_index(x, y, i)] = f_src[field_index(x, y, i_opp)]- 2 * wi[i_opp] * r[scalar_index(x, y)] ;
+    }
+
+
+
+}*/

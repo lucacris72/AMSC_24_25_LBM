@@ -4,10 +4,12 @@
 #include <memory>
 #include <string>
 
-#include "LBM.cpp"
+#include "LBM.h"
 #include "seconds.h"
 
 using namespace std;
+
+void report_flow_properties(unsigned int t, vector<double> rho, vector<double> ux, vector<double> uy);
 
 int main(int argc, char* argv[])
 {
@@ -110,4 +112,39 @@ void report_flow_properties(unsigned int t, vector<double> rho, vector<double> u
     prop.reserve(4);
     compute_flow_properties(t,rho,ux,uy,prop);
     printf("%u,%g,%g,%g,%g\n",t,prop[0],prop[1],prop[2],prop[3]);
+}
+
+void save_scalar(const string name, vector<double> scalar, unsigned int n)
+{
+    // assume reasonably-sized file names
+    char filename[128];
+    char format[16];
+    
+    // compute maximum number of digits
+    int ndigits = floor(log10((double)NSTEPS)+1.0);
+    
+    // generate format string
+    // file name format is name0000nnn.bin
+    sprintf(format,"%%s%%0%dd.bin",ndigits);
+    sprintf(filename,format,name,n);
+    
+    // open file for writing
+    FILE *fout = fopen(filename,"wb+");
+    
+    // write data
+    fwrite(&scalar[0], 1, mem_size_scalar, fout);
+    
+    // close file
+    fclose(fout);
+    
+    if(ferror(fout))
+    {
+        fprintf(stderr,"Error saving to %s\n",filename);
+        perror("");
+    }
+    else
+    {
+        if(!quiet)
+            printf("Saved to %s\n",filename);
+    }
 }
