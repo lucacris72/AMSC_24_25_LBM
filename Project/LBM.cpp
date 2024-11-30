@@ -13,100 +13,37 @@ void init_equilibrium(vector<double> &f0, vector<double> &f1, vector<double> &r,
     {
         for (unsigned int x = 0; x < NX; ++x)
         {
-            double rho = r[scalar_index(x, y)];
-            double ux = u[scalar_index(x, y)];
-            double uy = v[scalar_index(x, y)];
-            f0[field0_index(x,y)] = w0*(1.0 - 1.5*(ux*ux+uy*uy));
-            for (unsigned int i = 0; i < ndir; ++i)
-            {
-                double cidotu = dirx[i] * ux + diry[i] * uy;
-                f1[fieldn_index(x, y, i)] =
-                    wi[i] * rho * (1.0 + 3.0 * cidotu + 4.5 * cidotu * cidotu - 1.5 * (ux * ux + uy * uy));
-            }
-        }
-    }
-}
-
-/*void stream(vector<double> &f_src, vector<double> &f_dst)
-{
-    for (unsigned int y = 0; y < NY; ++y)
-    {
-        for (unsigned int x = 0; x < NX; ++x)
-        {
-            for (unsigned int i = 0; i < ndir; ++i)
-            {
-                // enforce periodicity
-                // add NX to ensure that value is positive
-                unsigned int xmd = (x - dirx[i]);
-                unsigned int ymd = (y - diry[i]);
-
-                if (!(0 <= xmd < NX || 0 <= ymd < NY))
-                {
-                    corner (f_src, f_dst, xmd, ymd);
-                }
-
-                else if (!(0 <= xmd < NX && 0 <= ymd < NY))
-                {
-                    bounceback (f_src, f_dst, xmd, ymd);
-                }
-                else
-                {
-                f_dst[field_index(x, y, i)] = f_src[field_index(xmd, ymd, i)];
-                }            
-            }
-        }
-    }
-}*/
-
-void compute_rho_u(vector<double> &f, vector<double> &r,
-                   vector<double> &u, vector<double> &v)
-{
-    for (unsigned int y = 0; y < NY; ++y)
-    {
-        for (unsigned int x = 0; x < NX; ++x)
-        {
-            double rho = 0.0;
+            
+            // initial value for the macroscopic proprieties
+            
+            double rho = rho0;
             double ux = 0.0;
             double uy = 0.0;
-            for (unsigned int i = 0; i < ndir; ++i)
+
+            if (y == 0)
             {
-                rho += f[fieldn_index(x, y, i)];
-                ux += dirx[i] * f[field_index(x, y, i)];
-                uy += diry[i] * f[field_index(x, y, i)];
-            }
+                ux = vu[0]; // apply boundary conditions on upper wall
+            } 
+            
             r[scalar_index(x, y)] = rho;
-            u[scalar_index(x, y)] = ux / rho;
-            v[scalar_index(x, y)] = uy / rho;
+            u[scalar_index(x, y)] = ux;
+            v[scalar_index(x, y)] = uy;
+
+            f0[field0_index(x,y)] = w0*(1.0 - 1.5*(ux*ux+uy*uy)); // initialize the distributions f1
+            for (unsigned int i = 1; i < ndir; ++i)
+            {
+                double cidotu = dirx[i] * ux + diry[i] * uy;
+                f1[fieldn_index(x, y, i)] = wi[i] * rho * (1.0 + 3.0 * cidotu + 4.5 * cidotu * cidotu - 1.5 * (ux * ux + uy * uy));
+            }
+
+           // printf("x = %d, y = %d, NY = %d \n", x, y, NY);
+
+            
         }
     }
+   
 }
 
-void collide(vector<double> &f, vector<double> &r, vector<double> &u, vector<double> &v)
-{
-    // useful constants
-    const double tauinv = 2.0 / (6.0 * nu + 1.0); // 1/tau
-    const double omtauinv = 1.0 - tauinv;
-    // 1 - 1/tau
-    for (unsigned int y = 0; y < NY; ++y)
-    {
-        for (unsigned int x = 0; x < NX; ++x)
-        {
-            double rho = r[scalar_index(x, y)];
-            double ux = u[scalar_index(x, y)];
-            double uy = v[scalar_index(x, y)];
-            for (unsigned int i = 0; i < ndir; ++i)
-            {
-                // calculate dot product
-                double cidotu = dirx[i] * ux + diry[i] * uy;
-                // calculate equilibrium
-                double feq = wi[i] * rho * (1.0 + 3.0 * cidotu + 4.5 * cidotu * cidotu - 1.5 * (ux * ux + uy * uy));
-                // relax to equilibrium
-                f[fieldn_index(x, y, i)] =
-                    omtauinv * f[field_index(x, y, i)] + tauinv * feq;
-            }
-        }
-    }
-}
 
 // Function that performs streaming, computation of moments, and collision in one step
 void stream_collide_save(vector<double> &f0, vector<double> &f1, vector<double> &f2,
@@ -132,6 +69,14 @@ void stream_collide_save(vector<double> &f0, vector<double> &f1, vector<double> 
             // 6 2 5
             // 3 0 1
             // 7 4 8
+            
+            double rho_in = f0[field0_index(x, y)];
+            
+            for (unsigned int i = 1; i < ndir; ++i)
+            {
+                rho_in = rho_in + f1[fieldn_index(x, y, i)];
+            }
+            
 
             ft[0] = f0[field0_index(x, y)];
 
@@ -145,58 +90,49 @@ void stream_collide_save(vector<double> &f0, vector<double> &f1, vector<double> 
                 bool up = 0;
                 bool down = 0;
 
-                
-                if (xmd < 0)
+                              
+                if (xmd < 0) // check if I need a value which is outside the border
                 {
                     left = 1;
                 }
 
-                if (xmd == NX)
+                if (xmd > NX -1)
                 {
                     right = 1;
                 }
 
-                if (ymd == -1)
+                if (ymd < 0)
                 {
                     up = 1;
                 }
 
-                if (ymd == NY)
+                if (ymd > NY - 1)
                 {
                     down = 1;
                 }
 
                 
-                if (!(right||left||up||down))
+                if ((right||left||up||down)) // apply boundary conditions if I'm going outside the border
 
                 {
-                    double coeff = 2.0 * wi[i] * (1.0/cs) * (1.0/cs) * r[scalar_index(x, y)];
+                    double coeff = 2.0 * wi[i] * (1.0/cs) * (1.0/cs) * rho_in;
                     double tmpx = dirx[i] * (left * vl[0]  + right * vr[0] + up * vu[0] + down * vd[0]);
                     double tmpy = diry[i] * (left * vl[1]  + right * vr[1] + up * vu[1] + down * vd[1]);
 
                     ft[i] = f1[fieldn_index(x, y, index_opp[i])] + coeff * tmpx + coeff * tmpy;
                 }
 
-                else
+                else // streaming step if when I'm not going outside the border
                 {
                     ft[i] = f1[fieldn_index(xmd, ymd, i)];
                 }            
             }
 
-            // load populations from adjacent nodes
-            /*double ft1 = f1[fieldn_index(xm1, y, 1)];
-            double ft2 = f1[fieldn_index(x, ym1, 2)];
-            double ft3 = f1[fieldn_index(xp1, y, 3)];
-            double ft4 = f1[fieldn_index(x, yp1, 4)];
-            double ft5 = f1[fieldn_index(xm1, ym1, 5)];
-            double ft6 = f1[fieldn_index(xp1, ym1, 6)];
-            double ft7 = f1[fieldn_index(xp1, yp1, 7)];
-            double ft8 = f1[fieldn_index(xm1, yp1, 8)];*/
-
-
             // compute moments
             double rho = ft[0] + ft[1] + ft[2] + ft[3] + ft[4] + ft[5] + ft[6] + ft[7] + ft[8];
+
             double rhoinv = 1.0 / rho;
+            
             double ux = rhoinv * (ft[1] + ft[5] + ft[8] - (ft[3] + ft[6] + ft[7]));
             double uy = rhoinv * (ft[2] + ft[5] + ft[6] - (ft[4] + ft[7] + ft[8]));
             // only write to memory when needed
@@ -298,54 +234,18 @@ void save_scalar(const char *name, vector<double> &scalar,
     // open file for writing
     FILE *fout = fopen(filename, "wb+");
     // write data
-    fwrite(&scalar, 1, mem_size_scalar, fout);
+    fwrite(&scalar[0], 1, mem_size_scalar, fout);
     // close file
     fclose(fout);
-}
 
-/*void streamBBM(vector<double> &f_src, vector<double> &f_dst, vector<double> &r)    // stream with Bouncing Back Method BC
-{
-    for (unsigned int y = 0; y < NY; ++y)
+    if(ferror(fout))
     {
-        for (unsigned int x = 0; x < NX; ++x)
-        {
-            for (unsigned int i = 0; i < ndir; ++i)
-            {
-                unsigned int xmd = (x - dirx[i]) ;
-                unsigned int ymd = (y - diry[i]) ;
-                
-                if (!(0 <= xmd < NX && 0 <= ymd < NY))
-                {
-                    bounceback (f_src, f_dst, xmd, ymd, i, r);
-                }
-
-                else
-                {
-                    f_dst[field_index(x, y, i)] = f_src[field_index(xmd, ymd, i)];
-                }            
-            }
-        }
+        fprintf(stderr,"Error saving to %s\n",filename);
+        perror("");
+    }
+    else
+    {
+        if(!quiet)
+            printf("Saved to %s\n",filename);
     }
 }
-
-void bounceback (vector<double> &f_src, vector<double> &f_dst, unsigned int xmd, unsigned int ymd, unsigned int i, vector<double> &r)
-{
-    unsigned int x = xmd + dirx[i];
-    unsigned int y = ymd + diry[i];
-
-    unsigned int i_opp = index_opp[i]
-
-    if (ymd != -1)
-    {   
-    f_dst[field_index(x, y, i)] = f_src[field_index(x, y, i_opp[i])];
-    }
-
-    else 
-    {
-    
-           f_dst[field_index(x, y, i)] = f_src[field_index(x, y, i_opp)]- 2 * wi[i_opp] * r[scalar_index(x, y)] ;
-    }
-
-
-
-}*/

@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <cmath>
+#include <string>
 
 using namespace std;
 
@@ -18,15 +19,15 @@ const unsigned int NX = 32 * scale;
 const unsigned int NY = NX;
 const unsigned int ndir = 9;
 const size_t size0 = NX * NY;
-const size_t size1 = NX * NY * ndir;
+const size_t size1 = NX * NY * (ndir-1);
 const size_t mem_size_0dir   = sizeof(double)*NX*NY;
-const size_t mem_size_ndir = sizeof(double) * NX * NY * ndir;
+const size_t mem_size_ndir = sizeof(double) * NX * NY * (ndir-1);
 const size_t mem_size_scalar = sizeof(double) * NX * NY;
 const size_t total_mem_bytes = mem_size_0dir + 2*mem_size_ndir + 3*mem_size_scalar;
 
-const unsigned int NSTEPS = 200*scale*scale;
-const unsigned int NSAVE  =  50*scale*scale;
-const unsigned int NMSG   =  50*scale*scale;
+const unsigned int NSTEPS = 40*scale*scale;
+const unsigned int NSAVE  =  20*scale*scale;
+const unsigned int NMSG   =  20*scale*scale;
 const bool computeFlowProperties = true;
 const bool quiet = true;
 
@@ -34,13 +35,13 @@ const double w0 = 4.0 / 9.0;  // zero weight
 const double wst = 1.0 / 9.0;  // adjacent weight
 const double wd = 1.0 / 36.0; // diagonal weight
 
-const double cs = 1.0/sqrt(3.0); 
+const double cs = 1.0/sqrt(3.0); // sound velocity
 
 
-const double vl[] = {0, 0}; //speed at the walls
-const double vr[] = {0, 0};
-const double vu[] = {1, 0};
-const double vd[] = {0, 0};
+const double vl[] = {0.0, 0.0}; //speed of left wall
+const double vr[] = {0.0, 0.0}; // " " right wall
+const double vu[] = {0.04, 0.0}; // " " upper wall
+const double vd[] = {0.0, 0.0}; // " " lower wall
 
 
 
@@ -50,7 +51,7 @@ const double wi[] = {w0, wst, wst, wst, wst, wd, wd, wd, wd};
 const int dirx[] = {0, 1, 0, -1, 0, 1, -1, -1, 1};
 const int diry[] = {0, 0, 1, 0, -1, 1, 1, -1, -1};
 
-const int index_opp[] = {0, 3, 4, 1, 2, 7, 8, 5, 6};
+const int index_opp[] = {0, 3, 4, 1, 2, 7, 8, 5, 6}; // index of opposite directions
 
 
 // The kinematic viscosity  and the corresponding relaxation parameter
