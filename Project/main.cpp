@@ -4,10 +4,12 @@
 #include <memory>
 #include <string>
 
-#include "LBM.cpp"
+#include "LBM.h"
 #include "seconds.h"
 
 using namespace std;
+
+void report_flow_properties(unsigned int t, vector<double> rho, vector<double> ux, vector<double> uy);
 
 int main(int argc, char* argv[])
 {

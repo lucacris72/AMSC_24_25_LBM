@@ -5,6 +5,13 @@
 
 using namespace std;
 
+void init_equilibrium(std::vector<double>&, std::vector<double>&, std::vector<double>&, std::vector<double>&, std::vector<double>&);
+void compute_rho_u(std::vector<double>&, std::vector<double>&, std::vector<double>&, std::vector<double>&);
+void collide(std::vector<double>&, std::vector<double>&, std::vector<double>&, std::vector<double>&);
+void stream_collide_save(std::vector<double>&, std::vector<double>&, std::vector<double>&, std::vector<double>&, std::vector<double>&, std::vector<double>&, bool);
+void compute_flow_properties(unsigned int, std::vector<double>, std::vector<double>, std::vector<double>, std::vector<double>);
+void save_scalar(const char*, std::vector<double>&, unsigned int);
+
 const unsigned int scale = 1;
 const unsigned int NX = 32 * scale;
 const unsigned int NY = NX;
@@ -19,15 +26,15 @@ const size_t total_mem_bytes = mem_size_0dir + 2*mem_size_ndir + 3*mem_size_scal
 const unsigned int NSTEPS = 200*scale*scale;
 const unsigned int NSAVE  =  50*scale*scale;
 const unsigned int NMSG   =  50*scale*scale;
-const bool computeFlowProperties = true;
+const bool computeFlowProperties = false;
 const bool quiet = true;
 
 const double w0 = 4.0 / 9.0;  // zero weight
-const double ws = 1.0 / 9.0;  // adjacent weight
+const double wst = 1.0 / 9.0;  // adjacent weight
 const double wd = 1.0 / 36.0; // diagonal weight
 
 // Arrays of the lattice weights and direction components
-const double wi[] = {w0, ws, ws, ws, ws, wd, wd, wd, wd};
+const double wi[] = {w0, wst, wst, wst, wst, wd, wd, wd, wd};
 const int dirx[] = {0, 1, 0, -1, 0, 1, -1, -1, 1};
 const int diry[] = {0, 0, 1, 0, -1, 1, 1, -1, -1};
 
@@ -41,8 +48,6 @@ const double u_max = 0.04 / scale;
 // The fluid density
 const double rho0 = 1.0;
 
-// The number of time steps in the simulation
-const unsigned int NSTEPS = 200 * scale * scale;
 
 inline size_t scalar_index(unsigned int x, unsigned int y)
 {

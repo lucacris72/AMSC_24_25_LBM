@@ -148,7 +148,7 @@ void stream_collide_save(vector<double> &f0, vector<double> &f1, vector<double> 
             // +(ci . 3u)(1 + (1/2) (ci . 3u))]
             // temporary variables
             double tw0r = tauinv * w0 * rho;                // w[0]*rho/tau
-            double twsr = tauinv * ws * rho;                // w[1-4]*rho/tau
+            double twsr = tauinv * wst * rho;                // w[1-4]*rho/tau
             double twdr = tauinv * wd * rho;                // w[5-8]*rho/tau
             double omusq = 1.0 - 1.5 * (ux * ux + uy * uy); // 1-(3/2)u.u
             double tux = 3.0 * ux;
