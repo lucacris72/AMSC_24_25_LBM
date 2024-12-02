@@ -122,13 +122,11 @@ void stream_collide_save(double *f0, double *f1, double *f2, double *r, double *
             double ux = rhoinv*(ft1+ft5+ft8-(ft3+ft6+ft7));
             double uy = rhoinv*(ft2+ft5+ft6-(ft4+ft7+ft8));
             
-            // only write to memory when needed
-            if(save)
-            {
+            // ALWAYS write to memory when needed
+           
                 r[scalar_index(x,y)] = rho;
                 u[scalar_index(x,y)] = ux;
                 v[scalar_index(x,y)] = uy;
-            }
             
             // temporary variables
             double tw0r = tauinv*w0*rho; //   w[0]*rho/tau 
