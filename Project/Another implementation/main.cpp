@@ -6,7 +6,7 @@
 
 int main(int argc, char* argv[])
 {
-    printf("Simulating Taylor-Green vortex decay\n");
+    printf("Simulating Lid-Driven Cavity\n");
     printf("      domain size: %ux%u\n",NX,NY);
     printf("               nu: %g\n",nu);
     printf("              tau: %g\n",tau);

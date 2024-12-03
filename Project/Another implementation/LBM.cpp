@@ -179,18 +179,26 @@ void compute_flow_properties(unsigned int t, double *r, double *u, double *v, do
     double sumrhoa2 = 0.0; // sum of analytical rho squared
     double sumuxa2 = 0.0;  //                   ux
     double sumuya2 = 0.0;  //                   uy
+
+    double *rhoa1 = (double*) malloc(mem_size_scalar);
+    double *uxa1 = (double*) malloc(mem_size_scalar);
+    double *uya1 = (double*) malloc(mem_size_scalar);
+    
+    lid_driven_cavity(rhoa1, uxa1, uya1);   // CHANGE WITH NEW FUNCTION?
     
     for(unsigned int y = 0; y < NY; ++y)
     {
         for(unsigned int x = 0; x < NX; ++x)
         {
-            double rho = r[scalar_index(x,y)];
-            double ux  = u[scalar_index(x,y)];
-            double uy  = v[scalar_index(x,y)];
+            int idx = scalar_index(x,y);
+            double rho = r[idx];
+            double ux  = u[idx];
+            double uy  = v[idx];
+            double rhoa = rhoa1[idx];
+            double uxa = uxa1[idx];
+            double uya = uya1[idx];
             E += rho*(ux*ux + uy*uy);
             
-            double rhoa, uxa, uya;
-            //taylor_green(t,x,y,&rhoa,&uxa,&uya);   // CHANGE WITH NEW FUNCTION?
             
             sumrhoe2 += (rho-rhoa)*(rho-rhoa);
             sumuxe2  += (ux-uxa)*(ux-uxa);
